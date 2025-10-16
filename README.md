@@ -224,4 +224,20 @@ curl http://localhost:8080
 Outcome:
 ✅ Terraform successfully deployed 3 containerized services locally.
 ✅ Datacenter simulation achieved without KVM support.
-✅ All code committed and pushed to GitHub.
+✅ All code committed and pushed to GitHub
+
+### 🧹 Teardown Verification
+
+After deployment testing, `terraform destroy -auto-approve` was executed.  
+A few “no such container” warnings appeared because some containers had already exited or been removed manually.  
+
+To confirm a clean teardown, manual verification and cleanup were done:
+
+```bash
+podman ps -a
+podman network ls
+podman rm webapp
+podman network rm datacenter_network
+✅ Result: All Terraform-created containers and networks were removed successfully.
+The Podman default bridge remains for future redeployment.
+
