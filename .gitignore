@@ -3,5 +3,15 @@
 *.tfstate.backup
 .terraform/
 .terraform.lock.hcl
+
+# Ansible and SSH
+*.pem
+ansible/inventory.ini
+
+# VM and local artifacts
+*.qcow2
+
 # Logs and temp files
 *.log
+logs/
+
