@@ -1,7 +1,5 @@
 🧠 Local Data Center Automation
-
 Fully Automated Infrastructure Simulation on RHEL 9
-
 📑 Table of Contents
 
 Overview
@@ -32,26 +30,26 @@ Troubleshooting Summary
 
 📘 Overview
 
-This project automates the creation and configuration of a small, realistic “data center” environment — running entirely on a local RHEL 9 system.
-It demonstrates a complete automation workflow using Terraform, Ansible, Bash, and optionally PowerShell.
+This project automates the creation and configuration of a small, realistic “local data center” on RHEL 9.
+It demonstrates an end-to-end automation workflow using Terraform, Ansible, and Bash, all running locally with Podman as the container backend.
 
 🎯 Goal
 
-To simulate a self-contained data center using open-source DevOps tools for provisioning, configuration management, and orchestration — all running locally, without any cloud dependencies.
+To simulate a self-contained infrastructure that mirrors a data center’s provisioning and configuration pipeline — entirely offline and cloud-independent.
 
 🧱 Tech Stack
 Tool	Purpose
-Terraform	Provision and orchestrate local infrastructure
-Ansible	Configure and manage services
-Bash	Automate validation and workflow orchestration
-PowerShell (optional)	Cross-platform status reporting
-Podman (Docker CLI)	Lightweight container runtime for local “VM-like” simulation
-Libvirt / QEMU-KVM	(Initial attempt) Virtualization backend for local VMs
+Terraform	Provision and orchestrate infrastructure
+Ansible	Configure and manage services post-deployment
+Bash	Automate health checks, validation, and orchestration
+PowerShell (optional)	Cross-platform reporting and status checks
+Podman	Lightweight container runtime for local “VM-like” simulation
+Libvirt / QEMU-KVM (initial attempt)	Virtualization backend — later replaced due to lack of hardware support
 🏗️ Target Environment
-VM / Container	Role	OS	Function
-web-server	Web Server	nginx:latest	Serves static web content
+Node	Role	OS / Image	Function
+web-server	Web Server	nginx:latest	Serves static content
 db-server	Database Server	mysql:8	Backend data services
-monitor-node	Monitoring Node	alpine:latest	Simulated system metrics collection
+monitor-node	Monitoring Node	alpine:latest	Simulated metrics collection
 📂 Project Structure
 local-datacenter-automation/
 ├── terraform/
@@ -83,79 +81,128 @@ local-datacenter-automation/
 ⚙️ Step-by-Step Implementation Progress
 ✅ Step 1: Environment Setup
 
-Installed all base DevOps tools on RHEL 9:
+Installed and verified required tooling on RHEL 9:
 
 sudo dnf install -y qemu-kvm libvirt libvirt-daemon libvirt-daemon-system virt-install
 sudo systemctl enable --now libvirtd
-sudo dnf install -y ansible wget unzip git
-sudo dnf install -y terraform
+sudo dnf install -y ansible wget unzip git terraform
 
 
-Verified:
+Verification:
 
-Terraform v1.9.8 installed
+✅ Terraform v1.9.8 operational
 
-Ansible operational
+✅ Ansible [core 2.14.18] functional
 
-Libvirt active
+✅ Podman socket active
 
-✅ Step 2: Terraform Phase (Podman “Local Datacenter”)
+⚠️ Libvirt skipped due to missing /dev/kvm
 
-Due to lack of hardware virtualization support (nested VMware environment), the project pivoted from Libvirt to Podman (Docker) as the Terraform backend.
+✅ Step 2: Terraform Phase (Pivot to Podman)
 
-Terraform files used:
+Since nested VMware prevented hardware virtualization, Terraform was reconfigured to use Podman (Docker provider) for containerized simulation.
 
-provider.tf — defines Docker provider
+Key files:
 
-main.tf — creates network and containers
+provider.tf → defines Docker provider via Podman socket
 
-output.tf — displays container details
+main.tf → creates containers and network
 
-.gitignore — excludes state files and sensitive data
+output.tf → outputs container details
+
+.gitignore → excludes binaries, logs, and state files
 
 Execution:
 
-cd /root/local-datacenter-automation/terraform
+cd terraform/
 terraform init
 terraform validate
 terraform plan
 terraform apply -auto-approve
 
-✅ Step 3: Verification
 
-List containers:
+Result:
 
-docker ps
+3 containers deployed (nginx, mysql, alpine)
 
+Verified via curl http://localhost:8080 → Nginx welcome page OK
 
-Output:
+✅ Step 3: Ansible Integration (New)
 
-CONTAINER ID  IMAGE                            COMMAND               CREATED         STATUS         PORTS                 NAMES
-a96c24563011  docker.io/library/nginx:latest   nginx -g daemon o...  Up 29 seconds   0.0.0.0:8080->80/tcp  web-server
-bdb2b910817a  docker.io/library/mysql:8        mysqld                Up 12 seconds   3306/tcp, 33060/tcp   db-server
-c33c3b7d5596  docker.io/library/alpine:latest  sh -c while true;...  Up 27 seconds                        monitor-node
+Ansible is now incorporated to configure the containers post-deployment.
 
+Example:
 
-Web verification:
-
-curl http://localhost:8080
+cd ansible/
+ansible-playbook -i inventory.ini playbooks/webserver.yml
 
 
-Returned the standard Nginx welcome page ✅
+Inventory Sample:
+
+[web]
+localhost ansible_connection=local
+
+[db]
+localhost ansible_connection=local
+
+[monitor]
+localhost ansible_connection=local
+
+
+This allows Ansible to:
+
+Deploy Nginx configuration templates
+
+Initialize MySQL with default schema
+
+Simulate a monitoring node setup
+
+✅ Step 4: Git Cleanup & Version Control
+
+During today’s updates:
+
+Merge conflict detected in .gitignore
+
+Resolved manually and rebased successfully
+
+Clean .gitignore now excludes large binaries, ISOs, logs, and Terraform state
+
+Final .gitignore:
+
+# Ignore ISO and VM image files
+*.iso
+*.qcow2
+*.img
+
+# Logs
+logs/*
+*.log
+
+# Terraform state files
+.terraform/
+terraform.tfstate*
+terraform.tfstate.backup
+
+# Ansible temporary files
+*.retry
+
+
+Verification:
+
+git status
+# nothing to commit, working tree clean
 
 🧪 Health Check Script
 
-The healthcheck.sh script validates environment readiness:
+healthcheck.sh verifies:
 
-Verifies dependencies (Terraform, Ansible, Podman)
+Terraform, Ansible, Podman presence
 
-Installs missing packages
+Service status (libvirtd, podman.socket)
 
-Checks service status (libvirtd, podman)
+Logs results to /logs/healthcheck_<timestamp>.log
 
-Logs results to /logs/healthcheck_<date>.log
-
-Example:
+Example output:
 
 ✅ Terraform v1.9.8 installed
 ✅ Ansible [core 2.14.18] detected
@@ -163,81 +210,66 @@ Example:
 
 📊 Current Status
 Component	Status	Notes
-Terraform	✅ Installed	v1.9.8, operational
-Ansible	✅ Installed	Verified locally
-Libvirt / QEMU-KVM	⚠️ Inactive	Pivoted to Podman due to virtualization limits
-Podman (Docker)	✅ Active	Provides lightweight “VM-like” container layer
-GitHub Repo	✅ Synced	dxdiag9908/local-datacenter-automation
+Terraform	✅	Functional, Podman backend
+Ansible	✅	Integrated for config mgmt
+Libvirt / KVM	⚠️	Disabled — hardware limitation
+Podman	✅	Container-based datacenter simulation
+GitHub Repo	✅	Synced: dxdiag9908/local-datacenter-automation
 🧰 Issues & Troubleshooting
 Issue	Root Cause	Resolution
-/dev/kvm not found	Nested VMware virtualization	Switched to Podman
-Merge conflict in .gitignore	Divergent Git histories	Resolved via manual merge
-Terraform provider version mismatch	Cached state files	Cleaned .terraform/ and reinitialized
+/dev/kvm missing	Nested VMware lacks hardware virtualization	Pivoted to Podman
+.gitignore merge conflict	Divergent repo histories	Manually merged and rebased
+Terraform state errors	Cached .terraform/ artifacts	Cleaned and reinitialized
+Ansible permission denied	SELinux + local connections	Used --connection=local and verified permissions
 📈 Results
 
-✅ Fully working Terraform local automation using Podman backend
-✅ 3-container datacenter simulation: Nginx, MySQL, Alpine
-✅ Verified service availability via curl http://localhost:8080
-✅ Project successfully pushed to GitHub
+✅ Fully operational Terraform + Ansible local automation
+✅ 3-container datacenter successfully deployed and configured
+✅ Clean Git state, repository pushed to GitHub
+✅ All infrastructure verified via curl and Ansible playbooks
 
 🚀 Next Steps
 
-Integrate Ansible playbooks for service configuration
+Expand Ansible playbooks for service hardening
 
-Implement deploy.sh and destroy.sh orchestration scripts
+Implement orchestration scripts (deploy.sh, destroy.sh)
 
-Add PowerShell cross-platform report generator
+Add PowerShell-based cross-platform reports
 
-Expand monitoring stack (Prometheus + Grafana containers)
+Add monitoring stack (Prometheus + Grafana)
 
-Document network topology diagram
+Create visual network diagram for documentation
 
 ✍️ Author Notes
 
-This project demonstrates how local automation environments can evolve under constraints.
-When virtualization wasn’t possible, the system successfully pivoted to containers — achieving the same logical outcome with Terraform-driven automation.
+This project shows adaptive automation in action:
+When virtualization wasn’t possible, the stack pivoted seamlessly to containers.
+With Terraform and Ansible working in tandem, a complete local datacenter simulation is achieved — infrastructure + configuration, fully automated.
 
 “Automation that adapts is automation that lasts.”
 
 🧩 Troubleshooting Summary
 
 Problem:
-Terraform (Libvirt) failed with /dev/kvm: No such file or directory
+Terraform (Libvirt) failed: /dev/kvm: No such file or directory
 
 Root Cause:
-egrep -c '(vmx|svm)' /proc/cpuinfo returned 0, confirming no hardware virtualization (running under VMware).
+No hardware virtualization support under VMware (egrep -c '(vmx|svm)' /proc/cpuinfo → 0)
 
 Solution:
-Pivoted to Podman (Docker provider), enabling container-based infrastructure automation.
+Pivoted to Podman backend. Linked Podman socket to Docker-compatible API:
 
-Commands Used:
-
-systemd-detect-virt
 sudo systemctl enable --now podman.socket
 sudo ln -s /run/podman/podman.sock /var/run/docker.sock
-docker ps
-terraform init
 terraform apply -auto-approve
 curl http://localhost:8080
 
 
 Outcome:
-✅ Terraform successfully deployed 3 containerized services locally.
-✅ Datacenter simulation achieved without KVM support.
-✅ All code committed and pushed to GitHub
+✅ Terraform successfully deployed all services
+✅ Ansible verified configuration
+✅ Environment teardown verified with:
 
-### 🧹 Teardown Verification
-
-After deployment testing, `terraform destroy -auto-approve` was executed.  
-A few “no such container” warnings appeared because some containers had already exited or been removed manually.  
-
-To confirm a clean teardown, manual verification and cleanup were done:
-
-```bash
+terraform destroy -auto-approve
 podman ps -a
 podman network ls
-podman rm webapp
-podman network rm datacenter_network
-✅ Result: All Terraform-created containers and networks were removed successfully.
-The Podman default bridge remains for future redeployment.
-
