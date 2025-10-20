@@ -1,17 +1,62 @@
-# Terraform
+# ==============================
+# Local Datacenter Automation
+# ==============================
+
+# ISO and VM image files
+*.iso
+*.qcow2
+*.img
+*.vdi
+*.vmdk
+
+# Cloud-init seed ISOs
+*seed.iso
+
+# Logs
+logs/
+*.log
+
+# Terraform files
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
 *.tfstate
 *.tfstate.backup
-.terraform/
-.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
 
-# Ansible and SSH
-*.pem
-ansible/inventory.ini
+# Terraform variable overrides
+terraform.tfvars
+terraform.tfvars.json
 
-# VM and local artifacts
-*.qcow2
+# Ansible cache and temp files
+*.retry
+*.cache/
+*.facts
+*.vault
+__pycache__/
 
-# Logs and temp files
-*.log
-logs/
+# Python & system cache
+*.pyc
+*.pyo
+*.pyd
+
+# OS / Editor / Misc junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/
+
+# Backup files
+*.bak
+*.old
+
+# ==============================
+# End of file
+# ==============================
 
