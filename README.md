@@ -284,4 +284,172 @@ terraform destroy -auto-approve
 podman ps -a
 podman network ls
 
+✅ Phase: VM Preparation + Role Structure + Initial Playbook Execution
+1. Inventory File Completed
 
+You created a clean and correct inventory.ini grouping hosts by role:
+
+[web]
+
+[db]
+
+[monitor]
+
+This establishes the structure Ansible uses to target machines.
+
+✅ Phase: Ansible Directory Structure
+
+Inside your project (local-datacenter-automation/ansible), you now have:
+
+ansible/
+ ├── inventory.ini
+ ├── playbooks/
+ │    ├── webserver.yml
+ │    ├── database.yml
+ │    └── monitoring.yml
+ └── roles/
+      ├── web/
+      │    └── tasks/main.yml
+      ├── db/
+      │    └── tasks/main.yml
+      └── monitor/
+           └── tasks/main.yml
+
+This is the proper Ansible role layout, and Ansible successfully detected the roles directory.
+
+✅ Phase: VM Discovery and Debugging
+✔ VMs were successfully created via script
+
+You confirmed:
+
+virsh list --all
+
+Shows:
+
+web (running)
+
+db (running)
+
+monitor (running)
+
+✔ Networks checked
+virsh net-list --all
+
+Confirmed default libvirt network is active.
+
+✔ VM interfaces seen via:
+virsh domiflist web
+virsh domiflist db
+virsh domiflist monitor
+
+Each VM has:
+
+1 NIC
+
+Connected to default network
+
+Unique MAC addresses
+
+⚠ Issue: No IP Addresses Detected
+
+virsh domifaddr <vm> returned no IPs, meaning:
+
+The OS inside the VM isn't installed yet
+
+Therefore, DHCP never requested an address
+
+No SSH possible → Ansible cannot connect
+
+This is why playbooks failed with:
+
+UNREACHABLE! No route to host / Connection timed out
+
+Because the machines exist but do not yet have an operating system, therefore:
+
+No network
+
+No IP
+
+No SSH service running
+
+⚠ Next Critical Step (Pending)
+Install AlmaLinux 9 inside each VM (web, db, monitor)
+
+Until OS installation is done, Ansible cannot configure anything.
+
+We planned to return to this step tomorrow.
+
+Summary of What We Achieved
+✔ Created full Ansible role structure
+✔ Created playbooks for web, db, monitor
+✔ Confirmed directory layout works
+✔ Verified libvirt VMs exist and run
+✔ Confirmed network is active
+✔ Diagnosed connectivity issue correctly
+✔ Determined next logical step: OS installation
+
+You are now one small step away from full end‑to‑end automation.
+
+What Happens Next (Tomorrow)
+
+Boot each VM using AlmaLinux ISO
+
+Install OS manually (first time only)
+
+Configure SSH + network
+
+Retrieve VM IPs
+
+Update inventory.ini
+
+Re-run Ansible playbooks successfully
+
+Once OS installs are done, real automation begins.
+
+End of README update.
+
+🧩 Latest Work Session — VM Creation, Networking & Ansible Prep
+
+Today’s session focused on preparing the environment for full Ansible-driven automation by shifting from container‑based simulation to real VM‑based infrastructure using Libvirt + QEMU-KVM. Even though the VMs are not yet fully configured, a foundational layer has been built.
+
+✔️ Key Actions Completed
+
+Verified that the default Libvirt network is active and functional.
+
+Created three VMs (web, db, monitor) via automated script.
+
+Ensured all VMs are running (virsh list --all → all three active).
+
+Confirmed network interfaces:
+
+web → vnet0
+
+db → vnet1
+
+monitor → vnet2
+
+Attached to VM consoles using:
+
+virsh console web
+virsh console db
+virsh console monitor
+
+Noted that IP addresses were not yet assigned (cloud‑init not applied).
+
+⚠️ Current Limitations
+
+No DHCP leases → VMs report no IP address (virsh domifaddr empty).
+
+As a result, Ansible failed SSH connections:
+
+UNREACHABLE! No route to host (port 22)
+
+VM OS installation still required (AlmaLinux ISO available at /var/lib/libvirt/boot/alma9-seed.iso).
+
+📌 Next Step (Deferred)
+
+Install AlmaLinux 9 on each VM, configure networking, and enable SSH so Ansible can connect. This will allow the existing playbooks (web, db, monitor roles) to run successfully.
+
+📝 Summary
+
+This session established the full virtualization layer for the upgraded local datacenter model. While the VMs are running and network‑attached, they still require OS installation and network configuration before the automation pipeline continues. The environment is now ready for the critical next phase: OS provisioning + initial SSH setup to unlock full Ansible automation.
